@@ -12,8 +12,8 @@
 <script defer src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
 <script defer src="./firebase-config.js"></script>
 <script defer src="./qr.js"></script>
-<script defer src="./firebase-game.js"></script>
-<script defer src="./app.js"></script>
+<script defer src="./firebase-game.js?v=teacher-control"></script>
+<script defer src="./app.js?v=teacher-control"></script>
 </head>
 <body>
 <div class="shell">
@@ -46,6 +46,7 @@
           <span class="label">回合動態</span>
           <div id="status" aria-live="polite"></div>
           <div id="error" role="status" hidden></div>
+          <button class="primary" id="gate" hidden>答對 · 開放翻牌</button>
           <button class="primary" id="next" hidden>下一組 →</button>
         </section>
         <section class="panel scoreboard">

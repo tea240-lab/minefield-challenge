@@ -34,7 +34,7 @@ function initMinefield(params) {
     return {
       deck,
       state: {
-        id: token(), turn: 1, active: 0, locked: false, groupCount,
+        id: token(), turn: 1, roundNumber: 1, active: 0, locked: true, groupCount,
         scores: Array(groupCount).fill(0),
       },
     };
@@ -43,7 +43,7 @@ function initMinefield(params) {
   function snapshot(state) {
     const cards = Array.from({length:36}, (_, i) => state.reveals?.[i] || null);
     return {
-      id: state.id, turn: state.turn, active: state.active, locked: state.locked,
+      id: state.id, turn: state.turn, roundNumber: state.roundNumber ?? state.turn, active: state.active, locked: state.locked,
       scores: state.scores, cards, events: cards.filter(Boolean).sort((a,b) => a.turn - b.turn),
       role: student ? team : 'teacher',
     };
@@ -87,6 +87,18 @@ function initMinefield(params) {
       if (!current.exists()) {
         const groups = Object.fromEntries(Array.from({length:10}, (_, i) => [i, token()]));
         await room.set({...round(5), codes:groups});
+      } else if (!current.child('state/roundNumber').exists()) {
+        await room.transaction(data => {
+          if (!data?.state || data.state.roundNumber != null) return;
+          const state = data.state;
+          state.roundNumber = state.turn;
+          if (!state.locked) {
+            state.locked = true;
+            state.turn++;
+            delete data.move;
+          }
+          return data;
+        }, undefined, false);
       }
     } catch {
       throw reject('無法開啟牌盤。請確認 Firebase 已發布踩地雷的資料庫規則。');
@@ -160,7 +172,7 @@ function initMinefield(params) {
       }).toString());
       return {origins:[page], keys};
     }
-    if (path === 'next' || path === 'reset') {
+    if (['next', 'reset', 'open', 'pause'].includes(path)) {
       const newRound = path === 'reset' ? round(fields.groups) : null;
       const result = await room.transaction(data => {
         const state = data?.state;
@@ -169,10 +181,23 @@ function initMinefield(params) {
           delete data.move;
           return {...data, ...newRound};
         }
-        if (!state.locked || Object.keys(state.reveals || {}).length === 36) return;
-        state.active = (state.active + 1) % state.groupCount;
-        state.turn++;
-        state.locked = false;
+        const revealed = Object.values(state.reveals || {});
+        if (revealed.length === 36) return;
+        if (path === 'open') {
+          if (!state.locked || revealed.some(card => card.turn === state.turn)) return;
+          state.locked = false;
+        } else if (path === 'pause') {
+          if (state.locked) return;
+          state.roundNumber ??= state.turn;
+          state.turn++;
+          state.locked = true;
+          delete data.move;
+        } else {
+          if (!state.locked) return;
+          state.active = (state.active + 1) % state.groupCount;
+          state.roundNumber = (state.roundNumber ?? state.turn) + 1;
+          state.turn++;
+        }
         return data;
       }, undefined, false);
       if (!result.committed) throw reject('牌盤已更新，請確認目前回合。');

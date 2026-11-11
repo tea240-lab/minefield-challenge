@@ -38,14 +38,19 @@ function render() {
   const left = 36 - game.events.length;
   const activeName = `第 ${game.active + 1} 組`;
   const nextGroup = (game.active + 1) % game.scores.length + 1;
+  const latest = game.events[game.events.length - 1];
+  const flipped = latest?.turn === game.turn;
   $('game').hidden = false;
   $('welcome').hidden = true;
   $('mode').textContent = teacher ? '教師投影端' : `第 ${game.role + 1} 組 · 學生端`;
-  $('turn').textContent = left ? `第 ${game.turn} 回合 · ${activeName}` : '36 張牌已全部翻開';
+  $('turn').textContent = left ? `第 ${game.roundNumber} 回合 · ${activeName}` : '36 張牌已全部翻開';
   $('remaining').textContent = left;
+  $('gate').hidden = !teacher || !left || flipped;
+  $('gate').disabled = busy;
+  $('gate').textContent = game.locked ? '答對 · 開放翻牌' : '暫停翻牌';
   $('next').hidden = !teacher;
   $('next').disabled = busy || !game.locked || !left;
-  $('next').textContent = left ? `下一組 · 第 ${nextGroup} 組 →` : '本局結束';
+  $('next').textContent = left ? `${flipped ? '下一組' : '跳過本組'} · 第 ${nextGroup} 組 →` : '本局結束';
   $('rank').hidden = !teacher;
   $('join').hidden = !teacher;
   $('reset').hidden = !teacher;
@@ -68,21 +73,23 @@ function render() {
     tile.setAttribute('aria-label', `${index + 1} 號${detail}`);
   });
 
-  const latest = game.events[game.events.length - 1];
   const status = $('status');
   let title;
   let note;
-  if (latest && game.locked) {
+  if (flipped) {
     const team = `第 ${latest.group + 1} 組`;
     title = latest.value ? `${team} ＋${latest.value} 分` : `${team} 踩到地雷！`;
     note = `${latest.card + 1} 號牌 · ${latest.before} → ${latest.score} 分`;
     if (left && !teacher) note += ' · 等老師開放下一組';
     if (!left) note += ' · 本局結束';
+  } else if (game.locked) {
+    title = `${activeName}等待老師放行`;
+    note = teacher ? '答對可開放翻牌。未答對可繼續等待，或跳過本組。' : '等老師開放後，再選一張牌。';
   } else {
     title = playable ? '輪到你們！' : `${activeName}可以翻牌`;
     note = playable ? '點一個號碼，翻開一張牌。' : '等這一組在 iPad 選號翻牌。';
   }
-  $('status-panel').classList.toggle('danger', Boolean(latest && game.locked && !latest.value));
+  $('status-panel').classList.toggle('danger', Boolean(flipped && !latest.value));
   const headline = document.createElement('strong');
   headline.textContent = title;
   const detail = document.createElement('p');
@@ -125,7 +132,7 @@ function accept(state) {
     const newest = state.events[state.events.length - 1];
     if (state.role === 'teacher' || newest.group === state.role) sound(newest.value);
   }
-  if (newGame || previous.turn !== state.turn || previous.events.length !== state.events.length) {
+  if (newGame || previous.turn !== state.turn || previous.locked !== state.locked || previous.events.length !== state.events.length) {
     $('error').hidden = true;
     render();
   }
@@ -296,6 +303,10 @@ $('network').addEventListener('change', showQRs);
 $('rank').addEventListener('click', () => {
   showRanks = !showRanks;
   renderScores();
+});
+$('gate').addEventListener('click', () => {
+  if (!audio) enableAudio();
+  action(game.locked ? 'open' : 'pause');
 });
 $('next').addEventListener('click', () => {
   if (!audio) enableAudio();
