@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#171c19">
+<title>踩地雷｜課堂翻牌挑戰</title>
+<link rel="stylesheet" href="./style.css">
+
+<script defer src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
+<script defer src="./firebase-config.js"></script>
+<script defer src="./qr.js"></script>
+<script defer src="./firebase-game.js"></script>
+<script defer src="./app.js"></script>
+</head>
+<body>
+<div class="shell">
+  <header class="mast">
+    <div><div class="eyebrow"><span class="signal"></span> 課堂競賽 <span class="separator">/</span> 36 格翻牌</div>
+    <h1>踩地雷<span>.</span></h1></div>
+    <div class="mode" id="mode">正在連線</div>
+  </header>
+  <div id="welcome" class="panel welcome" hidden></div>
+  <form id="teacher-login" class="panel welcome" hidden>
+    <h2>教師登入</h2>
+    <p>使用你在 Minefield Challenge 專案建立的教師帳號。學生請掃描老師提供的組別 QR Code。</p>
+    <label>帳號 <input id="teacher-email" type="email" autocomplete="username" required></label>
+    <label>密碼 <input id="teacher-password" type="password" autocomplete="current-password" required></label>
+    <button class="primary" type="submit">登入並開啟牌盤</button>
+    <p id="login-error" role="status"></p>
+  </form>
+  <main id="game" hidden>
+    <div class="stage">
+      <section class="arena panel" aria-label="翻牌區">
+        <div class="arena-head">
+          <div><span class="label">目前回合</span><h2 id="turn">連線中</h2></div>
+          <div class="remaining"><strong id="remaining">36</strong><span>剩餘牌數</span></div>
+        </div>
+        <div class="board" id="board" aria-label="6×6 牌盤"></div>
+        <div class="legend"><span><i class="dot lime"></i> 安全牌 ＋1～5 分</span><span><i class="dot red"></i> 地雷 本組歸零</span><span>每回合限翻 1 張</span></div>
+      </section>
+      <aside class="side">
+        <section class="panel status" id="status-panel">
+          <span class="label">回合動態</span>
+          <div id="status" aria-live="polite"></div>
+          <div id="error" role="status" hidden></div>
+          <button class="primary" id="next" hidden>下一組 →</button>
+        </section>
+        <section class="panel scoreboard">
+          <div class="score-head"><h2 id="score-heading">各組分數</h2><button class="mini" id="rank" aria-pressed="false" hidden>名次</button></div>
+          <ol id="scores"></ol>
+        </section>
+      </aside>
+    </div>
+    <footer>
+      <div id="connection" role="status"><i class="dot lime"></i> 已連線</div>
+      <div class="actions">
+        <button class="mini" id="sound" aria-pressed="false">🔊 開啟音效</button>
+        <button class="mini" id="join" hidden>iPad 加入 QR Code</button>
+        <button class="mini" id="reset" hidden>重新開局</button>
+      </div>
+    </footer>
+  </main>
+</div>
+<dialog id="join-dialog">
+  <form method="dialog" class="dialog-head"><h2>各組 iPad 加入</h2><button class="mini" aria-label="關閉">關閉</button></form>
+  <p>各組使用 iPad 相機掃描本組 QR Code，再以 Safari 開啟。</p>
+  <label id="network-label" hidden>教師電腦的網路位址 <select id="network"></select></label>
+  <div id="qr-grid" class="qr-grid"></div>
+</dialog>
+<dialog id="reset-dialog">
+  <form id="reset-form">
+    <div class="dialog-head"><h2>重新開局</h2><button type="button" class="mini" id="cancel-reset">取消</button></div>
+    <p>所有組別歸零，36 張牌重新洗牌。原本的組別 QR Code 可以繼續用。</p>
+    <label>比賽組數 <select id="groups"></select></label>
+    <button type="submit" class="primary">確認開新局</button>
+    <p id="reset-error" role="status" hidden></p>
+  </form>
+</dialog>
+</body>
+</html>

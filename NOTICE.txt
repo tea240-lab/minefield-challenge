@@ -1,0 +1,2 @@
+QR implementation: QRCode for JavaScript by Kazuhiko Arase (2009), MIT.
+Vendored from qrcode-terminal, whose project license is included in LICENSE.
